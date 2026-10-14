@@ -1,0 +1,9 @@
+Turn,NPC,Player_Text,Dialogue_Reply,Word_Count,Status,AI_OK,Latency,Action
+1,orpheus,We came to find Elara and shut down this anomaly.,Sector navigation grid active. Perimeter protocols remain engaged.,8,FALLBACK,False,0.01s,open_gate
+2,milo,"Keep close, Milo. We found Liora's log in the locker.","Did you hear that in the vents? We need to keep moving, Cael.",13,FALLBACK,False,0.01s,reveal_vault
+3,milo,"Milo, stay with me! It's an audio synthesis trap, not Elara!","You're right... that isn't Elara. It's an acoustic synthesis trap. I'm staying beside you, Cael.",15,AI_OK,True,0.01s,stay
+4,vance,Dr. Silas Vance. Step away from the Core console.,"Look around you, Cael. The fog answers to me now. Nothing you say changes what happened to Liora.",18,FALLBACK,False,0.03s,speak_only
+5,vance,Look at Liora's log! She knew what you were building was wrong.,Where did you get Liora's log...? She wrote that before the fog claimed her! You have no right to dredge up her memory!,23,AI_OK,True,0.01s,speak_only
+6,vance,And here is your own journal! You altered ORPHEUS out of grief!,"My journal... Yes, I altered the navigational math! Because out there is random, senseless tragedy! Here, inside ORPHEUS, everything is controlled!",21,AI_OK,True,0.01s,destroy_core
+7,vance,asdfghjklllllllll,"Speak sense, traveller. We stand at the threshold of the Core, and I have no patience for gibberish.",18,AI_OK,True,0.02s,speak_only
+8,vance,,,0,EMPTY_IGNORED,True,0.01s,speak_only
