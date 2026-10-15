@@ -49,11 +49,18 @@ def test_all():
 
     print("\n--- 6. Testing Character Dialogue & Schema Integrity ---")
     required_keys = [
-        "accepted", "player_line", "player_seconds", "dialogue", "npc_seconds",
+        "accepted", "speaker", "player_line", "player_seconds", "dialogue", "npc_seconds",
         "interrupt_speaker", "interrupt_line", "interrupt_seconds", "guard",
         "action", "ending", "fog_density", "vance_resolve", "milo_trust",
         "orpheus_suspicion", "last_tag", "ai_ok"
     ]
+    assert len(required_keys) == 18, "TalkResponse must contain exactly 18 fields"
+
+    expected_speakers = {
+        "vance": "Dr. Silas Vance",
+        "orpheus": "ORPHEUS",
+        "milo": "Milo Ardent",
+    }
 
     for npc in ["vance", "orpheus", "milo"]:
         r = client.post("/talk", json={
@@ -64,16 +71,19 @@ def test_all():
         assert r.status_code == 200
         turn_data = r.json()
         
-        # Verify complete schema matches PDF
+        # Verify complete schema matches Unreal contract
         for k in required_keys:
             assert k in turn_data, f"Missing required key '{k}' in response for {npc}"
+        assert len(turn_data) == 18, f"Expected 18 fields, got {len(turn_data)}"
 
         assert turn_data["accepted"] is True
+        assert turn_data["speaker"] == expected_speakers[npc]
         assert len(turn_data["dialogue"]) > 0
         assert turn_data["player_seconds"] > 0
         assert turn_data["npc_seconds"] > 0
         assert turn_data["action"] == "speak_only"
-        print(f"[PASS] Character turn for '{npc}': reply='{turn_data['dialogue'][:45]}...' | ai_ok={turn_data['ai_ok']}")
+        print(f"[PASS] Character turn for '{npc}': speaker='{turn_data['speaker']}' | reply='{turn_data['dialogue'][:40]}...' | ai_ok={turn_data['ai_ok']}")
+
 
     print("\n--- 7. Testing Game State & Reset Endpoints ---")
     r = client.get("/state")

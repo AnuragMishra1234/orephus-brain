@@ -19,7 +19,7 @@ Validates:
 """
 
 from fastapi.testclient import TestClient
-from server import app
+from server import app, session_state
 
 client = TestClient(app)
 
@@ -107,6 +107,7 @@ def run_all_tests():
     # -----------------------------------------------------------------
     print("\n--- Test 5: Memory survives intervening conversations ---")
     # Intervening talk with Milo in archive
+    client.post("/event", json={"event": "evidence_discovered", "evidence_id": "ev_liora_log", "context": "archive"})
     client.post("/talk", json={
         "npc_id": "milo",
         "player_text": "Keep your flashlight ready, Milo.",
@@ -135,24 +136,43 @@ def run_all_tests():
     print(f"[PASS] ORPHEUS quoted player's gate answer back: '{data['interrupt_line']}'")
 
     # -----------------------------------------------------------------
-    # Test 9: Unconfirmed evidence does not cause resolve penalty
+    # Test 9: Question/Negation about evidence vs Affirmative Lie
     # -----------------------------------------------------------------
-    print("\n--- Test 9: Merely typing keywords without holding evidence has no penalty ---")
+    print("\n--- Test 9: Question about unheld evidence vs Affirmative Lie ---")
     current_resolve = client.get("/state").json()["vance_resolve"]
-    r = client.post("/talk", json={
+    # 9a: Question about journal without holding it (should NOT trigger lie detection)
+    r_q = client.post("/talk", json={
+        "npc_id": "vance",
+        "player_text": "Did you write in your private journal, Dr. Vance?",
+        "context": "core",
+        "evidence": ""  # Player does NOT hold ev_vance_journal!
+    })
+    assert r_q.status_code == 200
+    st_after_q = client.get("/state").json()
+    assert "ev_vance_journal" not in st_after_q["evidence_seen"]
+    assert "ev_vance_journal" not in st_after_q["evidence_reacted"]
+    assert r_q.json()["last_tag"] != "lie_detected"
+    print("[PASS] Question about unheld evidence did not trigger lie detection.")
+
+    # 9b: Affirmative false claim without holding evidence (SHOULD trigger lie detection)
+    # First lower resolve slightly so we can observe the +20 penalty
+    session_state["vance_resolve"] = 70
+    r_lie = client.post("/talk", json={
         "npc_id": "vance",
         "player_text": "I read your private journal, Dr. Vance!",
         "context": "core",
         "evidence": ""  # Player does NOT hold ev_vance_journal!
     })
-    assert r.status_code == 200
-    st_after = client.get("/state").json()
-    assert "ev_vance_journal" not in st_after["evidence_seen"]
-    assert "ev_vance_journal" not in st_after["evidence_reacted"]
-    print("[PASS] Unheld evidence mention ignored for evidence penalty.")
+    assert r_lie.status_code == 200
+    data_lie = r_lie.json()
+    assert data_lie["last_tag"] == "lie_detected"
+    assert "bluffing" in data_lie["dialogue"] or "deceive" in data_lie["dialogue"]
+    st_after_lie = client.get("/state").json()
+    assert st_after_lie["vance_resolve"] == 90  # 70 + 20 penalty
+    print(f"[PASS] False claim triggered lie detection: resolve increased 70 -> {st_after_lie['vance_resolve']}.")
 
     # -----------------------------------------------------------------
-    # Test 7 & 10: Valid evidence presented applies penalty and reaction
+    # Test 7 & 10: Valid evidence cited drops resolve by 25 and triggers reaction
     # -----------------------------------------------------------------
     print("\n--- Test 7 & 10: Valid evidence citation drops resolve and triggers reaction ---")
     resolve_before = client.get("/state").json()["vance_resolve"]
@@ -167,7 +187,7 @@ def run_all_tests():
     assert data["last_tag"] == "evidence_reaction"
     assert "Liora's log" in data["dialogue"]
     st_after = client.get("/state").json()
-    assert st_after["vance_resolve"] == resolve_before - 35
+    assert st_after["vance_resolve"] == resolve_before - 25
     print(f"[PASS] Vance resolve dropped from {resolve_before} to {st_after['vance_resolve']}.")
 
     # -----------------------------------------------------------------
@@ -234,22 +254,33 @@ def run_all_tests():
     # Milo stays
     client.post("/talk", json={"npc_id": "milo", "player_text": "It's a trap, stay close", "context": "voice_beat"})
     
-    # Present 1st evidence: ev_liora_log (drops resolve 100 -> 65)
+    # Discover clues in Archive
+    for ev in ["ev_liora_log", "ev_vance_journal", "ev_elara_recorder"]:
+        client.post("/event", json={"event": "evidence_discovered", "evidence_id": ev, "context": "archive"})
+    
+    # Present 1st evidence: ev_liora_log (drops resolve 100 -> 75)
     client.post("/talk", json={
         "npc_id": "vance",
         "player_text": "Look at Liora's log, Dr. Vance.",
         "context": "core",
-        "evidence": "ev_liora_log,ev_vance_journal"
+        "evidence": "ev_liora_log,ev_vance_journal,ev_elara_recorder"
     })
-    # Present 2nd evidence: ev_vance_journal (drops resolve 65 -> 30)
-    r = client.post("/talk", json={
+    # Present 2nd evidence: ev_vance_journal (drops resolve 75 -> 50)
+    client.post("/talk", json={
         "npc_id": "vance",
         "player_text": "And look at your journal! You altered the code out of grief!",
         "context": "core",
-        "evidence": "ev_liora_log,ev_vance_journal"
+        "evidence": "ev_liora_log,ev_vance_journal,ev_elara_recorder"
+    })
+    # Present 3rd evidence: ev_elara_recorder (drops resolve 50 -> 25, triggers Ending A)
+    r = client.post("/talk", json={
+        "npc_id": "vance",
+        "player_text": "Listen to Elara's voice recorder! She never wanted this nightmare!",
+        "context": "core",
+        "evidence": "ev_liora_log,ev_vance_journal,ev_elara_recorder"
     })
     data = r.json()
-    assert data["vance_resolve"] == 30
+    assert data["vance_resolve"] == 25
     assert data["action"] == "destroy_core"
     assert data["ending"] == "A"
     print(f"[PASS] Ending A triggered: action={data['action']}, ending={data['ending']}")
@@ -261,20 +292,31 @@ def run_all_tests():
     client.post("/talk", json={"npc_id": "milo", "player_text": "Go into the fog now!", "context": "voice_beat"})
     assert client.get("/state").json()["milo_fled"] is True
 
-    # Break Vance's resolve
+    # Discover clues for Ending A2
+    for ev in ["ev_liora_log", "ev_vance_journal", "ev_elara_recorder"]:
+        client.post("/event", json={"event": "evidence_discovered", "evidence_id": ev, "context": "archive"})
+
+    # Break Vance's resolve with 3 evidence items
     client.post("/talk", json={
         "npc_id": "vance",
         "player_text": "Look at Liora's log.",
         "context": "core",
-        "evidence": "ev_liora_log,ev_vance_journal"
+        "evidence": "ev_liora_log,ev_vance_journal,ev_elara_recorder"
     })
-    r = client.post("/talk", json={
+    client.post("/talk", json={
         "npc_id": "vance",
         "player_text": "And your journal proves it all.",
         "context": "core",
-        "evidence": "ev_liora_log,ev_vance_journal"
+        "evidence": "ev_liora_log,ev_vance_journal,ev_elara_recorder"
+    })
+    r = client.post("/talk", json={
+        "npc_id": "vance",
+        "player_text": "Here is Elara's audio recorder, Vance. Face reality.",
+        "context": "core",
+        "evidence": "ev_liora_log,ev_vance_journal,ev_elara_recorder"
     })
     data = r.json()
+    assert data["vance_resolve"] == 25
     assert data["action"] == "destroy_core"
     assert data["ending"] == "A2"
     print(f"[PASS] Ending A2 triggered: action={data['action']}, ending={data['ending']}")
@@ -309,7 +351,7 @@ def run_all_tests():
     # -----------------------------------------------------------------
     print("\n--- Test 15: Phase 2.1 Contract Schema Verification ---")
     required_keys = [
-        "accepted", "player_line", "player_seconds", "dialogue", "npc_seconds",
+        "accepted", "speaker", "player_line", "player_seconds", "dialogue", "npc_seconds",
         "interrupt_speaker", "interrupt_line", "interrupt_seconds", "guard",
         "action", "ending", "fog_density", "vance_resolve", "milo_trust",
         "orpheus_suspicion", "last_tag", "ai_ok"
@@ -318,7 +360,8 @@ def run_all_tests():
     data = r.json()
     for k in required_keys:
         assert k in data, f"Contract broken: missing key '{k}'"
-    print("[PASS] Full 16-field Unreal response contract intact.")
+    assert len(data) == 18
+    print("[PASS] Full 18-field Unreal response contract intact.")
 
     print("\n================================================================")
     print(" ALL 15 PHASE 2.2 TESTS PASSED PERFECTLY! ")

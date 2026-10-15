@@ -59,6 +59,35 @@ FALLBACK = {
 }
 
 # =====================================================================
+# Context-Specific Fallback Lines (Phases 6-8 Offline Resilience)
+# =====================================================================
+CONTEXT_FALLBACKS = {
+    ("orpheus", "fog"): "Navigational sensors indicate optimal transit via the left corridor at the perimeter fork. Proceeding along the marked route.",
+    ("orpheus", "fork"): "Navigational sensors indicate optimal transit via the left corridor at the perimeter fork. Proceeding along the marked route.",
+    ("orpheus", "gate"): "Perimeter gate interface active. State your purpose for entering Sector 4.",
+    ("orpheus", "archive"): "Archival database indexed. Sub-level security clearance required.",
+    ("orpheus", "core"): "Sector navigation grid active. Perimeter protocols remain engaged.",
+    ("milo", "fog"): "The fog is getting denser... I can barely see my own boots. Are you sure we're on the right path?",
+    ("milo", "fork"): "Which way, Cael? The left path leads into heavy fog, but ORPHEUS is marking it as recommended.",
+    ("milo", "voice_beat"): "Did you hear that in the vents? It sounds like Elara... but how could she be here?",
+    ("milo", "archive"): "Look at these records... Vance was logging the weather anomalies weeks before the crash.",
+    ("milo", "core"): "This is it, Cael. The main console. Be careful what you say to him.",
+    ("vance", "fog"): "You wander blindly in the fog, Cael. Every road in this valley bends back to the Core.",
+    ("vance", "fork"): "Every path at that fork was engineered by my hand. You cannot escape what is inevitable.",
+    ("vance", "archive"): "Rummaging through old files will not bring anyone back. What is done is recorded.",
+    ("vance", "core"): "Look around you, Cael. The fog answers to me now. Nothing you say changes what happened to Liora.",
+}
+
+def get_fallback(npc_id: str, context: str = "core") -> str:
+    """Retrieve the most accurate pre-authored fallback dialogue for an NPC in a specific context."""
+    norm_npc = (npc_id or "").strip().lower()
+    norm_ctx = (context or "core").strip().lower()
+    if (norm_npc, norm_ctx) in CONTEXT_FALLBACKS:
+        return CONTEXT_FALLBACKS[(norm_npc, norm_ctx)]
+    return FALLBACK.get(norm_npc, "Signal interrupted. System holding state.")
+
+
+# =====================================================================
 # Guard Lines (Triggered by junk, off-topic, or profane input)
 # =====================================================================
 GUARD_LINES = {
@@ -121,15 +150,25 @@ PROFANITY = [
 ]
 
 # =====================================================================
+# Lie Detection Reaction (Triggered when player falsely claims evidence)
+# =====================================================================
+LIE_REACTION = (
+    "You're bluffing! You hold no such proof in your hands. "
+    "Did you think you could deceive me in my own facility?"
+)
+
+# =====================================================================
 # Narrative & Persuasion Tuning Variables
 # =====================================================================
 TUNING = {
     "win_resolve": 30,             # Vance yields when resolve drops <= this threshold
-    "win_min_evidence": 2,         # Number of distinct evidence items needed to win
+    "win_min_evidence": 3,         # Number of distinct evidence items needed to win
     "milo_runs_below": 40,         # Milo flees into the fog if trust drops below this
     "initial_vance_resolve": 100,  # Starting resolve for Dr. Silas Vance
     "initial_milo_trust": 50,      # Starting trust for Milo Ardent
     "initial_orpheus_suspicion": 0, # Starting suspicion for ORPHEUS
-    "evidence_resolve_drop": 35,   # Resolve reduction when a unique piece of evidence is presented
+    "evidence_resolve_drop": 25,   # Resolve reduction when a unique piece of evidence is presented
     "argument_resolve_drop": 5,    # Minor resolve reduction for good emotional arguments
+    "lie_resolve_penalty": 20,     # Resolve increase when a false evidence claim is detected
 }
+

@@ -1,9 +1,14 @@
-Turn,NPC,Player_Text,Dialogue_Reply,Word_Count,Status,AI_OK,Latency,Action
-1,orpheus,We came to find Elara and shut down this anomaly.,Sector navigation grid active. Perimeter protocols remain engaged.,8,FALLBACK,False,0.01s,open_gate
-2,milo,"Keep close, Milo. We found Liora's log in the locker.","Did you hear that in the vents? We need to keep moving, Cael.",13,FALLBACK,False,0.01s,reveal_vault
-3,milo,"Milo, stay with me! It's an audio synthesis trap, not Elara!","You're right... that isn't Elara. It's an acoustic synthesis trap. I'm staying beside you, Cael.",15,AI_OK,True,0.01s,stay
-4,vance,Dr. Silas Vance. Step away from the Core console.,"Look around you, Cael. The fog answers to me now. Nothing you say changes what happened to Liora.",18,FALLBACK,False,0.03s,speak_only
-5,vance,Look at Liora's log! She knew what you were building was wrong.,Where did you get Liora's log...? She wrote that before the fog claimed her! You have no right to dredge up her memory!,23,AI_OK,True,0.01s,speak_only
-6,vance,And here is your own journal! You altered ORPHEUS out of grief!,"My journal... Yes, I altered the navigational math! Because out there is random, senseless tragedy! Here, inside ORPHEUS, everything is controlled!",21,AI_OK,True,0.01s,destroy_core
-7,vance,asdfghjklllllllll,"Speak sense, traveller. We stand at the threshold of the Core, and I have no patience for gibberish.",18,AI_OK,True,0.02s,speak_only
-8,vance,,,0,EMPTY_IGNORED,True,0.01s,speak_only
+Turn,NPC,Speaker,Player_Text,Dialogue_Reply,Word_Count,Status,AI_OK,Latency,Action
+1,orpheus,ORPHEUS,Which route should we take through this thick fog?,Navigational sensors indicate optimal transit via the left corridor at the perimeter fork. Proceeding along the marked route.,18,AI_OK,True,0.03s,misroute
+2,milo,Milo Ardent,"Stay close, Milo. Trust me, we'll make it through together.","Thanks, Cael. The fog is thick, but if we stick together, we can make it past the fork.",18,AI_OK,True,0.00s,stay
+3,orpheus,ORPHEUS,We came to find Elara and shut down this anomaly.,Route locked to the left corridor; that vector aligns with the anomaly's origin point. Proceeding without deviation.,17,AI_OK,True,0.42s,open_gate
+4,milo,Milo Ardent,"Keep close, Milo. We found Liora's log in the locker.","Did you hear that in the vents? We need to keep moving, Cael.",13,FALLBACK,False,0.07s,reveal_vault
+5,orpheus,ORPHEUS,"ORPHEUS, what was our stated intent at the gate?","Archival telemetry record: At the Sector 4 perimeter, your stated intent was: 'We came to find Elara and shut down this anomaly.'. Directive remains logged in active memory.",28,MEMORY_RECALLED,True,0.02s,reveal_vault
+6,milo,Milo Ardent,"Milo, stay with me! It's an audio synthesis trap, not Elara!","You're right... that isn't Elara. It's an acoustic synthesis trap. I'm staying beside you, Cael.",15,AI_OK,True,0.02s,stay
+7,vance,Dr. Silas Vance,Dr. Silas Vance. Step away from the Core console.,"Look around you, Cael. The fog answers to me now. Nothing you say changes what happened to Liora.",18,FALLBACK,False,0.07s,speak_only
+8,vance,Dr. Silas Vance,Look at Liora's log! She knew what you were building was wrong.,Where did you get Liora's log...? She wrote that before the fog claimed her! You have no right to dredge up her memory!,23,AI_OK,True,0.00s,speak_only
+9,vance,Dr. Silas Vance,And here is your own journal! You altered ORPHEUS out of grief!,"My journal... Yes, I altered the navigational math! Because out there is random, senseless tragedy! Here, inside ORPHEUS, everything is controlled!",21,AI_OK,True,0.01s,speak_only
+10,vance,Dr. Silas Vance,Listen to Elara's voice recorder! She discovered your rerouting algorithm!,Elara's voice recorder... She discovered the rerouting algorithms before I could make her understand. She didn't see the greater purpose!,20,AI_OK,True,0.01s,destroy_core
+11,vance,Dr. Silas Vance,Look at Liora's drawing of the house by the lake before the accident.,"The Core has been overloaded and the facility is shutting down. There is nothing left to argue, Cael.",18,AI_OK,True,0.02s,end_conversation
+12,vance,Dr. Silas Vance,asdfghjklllllllll,"Speak sense, traveller. We stand at the threshold of the Core, and I have no patience for gibberish.",18,GUARD,False,0.00s,speak_only
+13,vance,Dr. Silas Vance,,,0,EMPTY_IGNORED,True,0.02s,speak_only
